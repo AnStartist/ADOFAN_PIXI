@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>adofan PIXI</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; position:fixed;top: 0;left: 0;z-index: -9999;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .content-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 2rem 4rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .corner-notice {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 9999;
+            background: rgba(30, 30, 30, 0.85);
+            border-radius: 15px;
+            padding: 8px 16px;
+            max-width: 400px;
+            min-width: 150px;
+            width: auto;
+            font-family: inherit;
+            color: #f1f5f9;
+            word-break: break-word;
+            white-space: normal;
+            line-height: 1.2;
+            letter-spacing: 0.01em;
+        }
+
+        .notice-content {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            text-align: right;
+        }
+        .notice-text {
+            font-size: 0.88rem;
+            opacity: 0.92;
+            font-weight: 450;
+            line-height: 1.45;
+        }
+
+        @media (max-width: 560px) {
+            .corner-notice {
+                top: 16px;
+                right: 16px;
+                max-width: calc(100% - 32px);
+                padding: 8px 16px;
+                border-radius: 15px;
+            }
+            .notice-text {
+                font-size: 0.8rem;
+            }
+            .content-wrapper {
+                padding: 1.2rem 1.2rem 3rem 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script type="module" src="main.js"></script>
+    <img src="./images/import.svg" onclick="importfile()" style="position:absolute; margin-top: 16px; margin-left: 16px; z-index: 100;"></img>
+    <img src="./images/showtiles.svg" onclick="renderalltrack()" style="position:absolute; margin-top: 50px; margin-left: 16px; z-index: 100;"></img>
+    <img src="./images/video.svg" onclick="videoImport()" style="position:absolute; margin-top: 84px; margin-left: 16px; z-index: 100;"></img>
+    <img src="./images/Play.svg" onclick="playOnClick()" style="position: absolute; bottom: 20px; left: 20px; z-index: 100; margin: 0; width: 50px; height: auto;" id = 'ButtonSP'>    
+    <img src="./images/Escape.svg" onclick="escapeOnClick()" style="position: absolute; bottom: 45px; left: -75px; z-index: 100; margin: 0;" id = 'ButtonEscape'>    
+    <img src="./images/speed-.svg" onclick="speedDown()" style="position: absolute; bottom: 25px; left: 75px; z-index: 100; margin: 0; width: 15px ;height: auto;">
+    <img src="./images/speed+.svg" onclick="speedUp()" style="position: absolute; bottom: 25px; left: 128px; z-index: 100; margin: 0; width: 15px ;height: auto;">        
+    <p style="color: #ffffff; position: absolute; bottom: 25px; left: 92.5px; font-family: inherit; text-align: center; font-weight: 500; font-size: 12px;" id="speed">100%</p>
+    <div class="content-wrapper">
+        <div class="corner-notice" role="status" aria-label="OverLayer">
+            <div class="notice-content">
+                <div class="notice-text" id="TFPS">
+                    60 | TFPS
+                </div>
+                <div class="notice-text" id="Beat">
+                    0 | Beat
+                </div>
+                <div class="notice-text" id="Notice">
+                    
+                </div>
+        </div>
+    </div>
+</body>
+</html>
