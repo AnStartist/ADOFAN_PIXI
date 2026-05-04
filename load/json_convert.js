@@ -6,8 +6,8 @@ export function toLegalJson(oldjson) {
         .replace(/,(\s*[}\]])/g, "$1")   // 去尾逗号
         .replace(/}\s*{/g, "},{")        // 补逗号
         .replace(/\[\],,/g, "[],")
-        .replace(/, ,/g, ",");
-
+        .replace(/, ,/g, ",")
+        .replace(/^\uFEFF/, '');
     json = json.replace(
         /\](\s*)"decorations"/g,
         "],$1\"decorations\""

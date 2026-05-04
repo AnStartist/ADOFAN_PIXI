@@ -25,39 +25,40 @@ export class loadlevel extends processing{
         const len = this.actions.length;
         for (let i = 0;i<len;i++) {
             const action = this.actions[i];
-            if (![false , 'Disabled'].includes(action['active']))
-            {
-                switch(action['eventType']) {
-                    case 'Twirl':
-                        this.actionTwirl.push(action);
-                        break;
-                    case 'SetSpeed':
-                        this.actionSpeed.push(action);
-                        break;
-                    case 'ScaleRadius':
-                        this.actionScale.push(action);
-                        break;
-                    case 'Pause':
-                        this.actionPause.push(action);
-                        break;
-                    case 'PositionTrack':
-                        this.actionPosTrack.push(action);
-                        break;
-                    case 'SetHitsound':
-                        this.actionSetHitSound.push(action);
-                        break;
-                    case 'MoveCamera':
-                        this.actionCamera.push(action);
-                        break;
-                    case "MoveTrack":
-                        this.actionMoveTrack.push(action);
-                        break;
-                    case "ColorTrack":
-                        this.actionColorTrack.push(action);
-                        break;
-                    case 'RecolorTrack':
-                        this.actionRecolorTrack.push(action);
-                        break;
+            if(![false,'Disabled'].includes(action['active'])){
+                if (!(action['editorOnly'] === true)) {
+                    switch(action['eventType']) {
+                        case 'Twirl':
+                            this.actionTwirl.push(action);
+                            break;
+                        case 'SetSpeed':
+                            this.actionSpeed.push(action);
+                            break;
+                        case 'ScaleRadius':
+                            this.actionScale.push(action);
+                            break;
+                        case 'Pause':
+                            this.actionPause.push(action);
+                            break;
+                        case 'PositionTrack':
+                            this.actionPosTrack.push(action);
+                            break;
+                        case 'SetHitsound':
+                            this.actionSetHitSound.push(action);
+                            break;
+                        case 'MoveCamera':
+                            this.actionCamera.push(action);
+                            break;
+                        case "MoveTrack":
+                            this.actionMoveTrack.push(action);
+                            break;
+                        case "ColorTrack":
+                            this.actionColorTrack.push(action);
+                            break;
+                        case 'RecolorTrack':
+                            this.actionRecolorTrack.push(action);
+                            break;
+                    };
                 };
             };
         };
