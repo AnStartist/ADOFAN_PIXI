@@ -7,6 +7,8 @@ import { mixAudio } from './load/audio_mix.js';
 import * as Ease from 'd3-ease';
 import { ColorType , ShiftType } from './load/ColorType.js';
 import { setRenderer } from './load/tile_svg.js';
+import defaultLevel from './default_map/Rainbow_Chaser_Remake.adofai?raw';
+import defaultLevelOgg from './default_map/Rainbow_Chaser.ogg?url';
 
 const easeQuartIn = Ease.easePolyIn.exponent(4.0);
 const easeQuartOut = Ease.easePolyOut.exponent(4.0);
@@ -26,12 +28,11 @@ let adofaifile = new String;
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.style.display = 'none'; // 隐藏
-fileInput.accept=".adofai";
+fileInput.accept=".adofai, application/json, text/plain";
 document.body.appendChild(fileInput);
 let CX = window.innerWidth / 2, CY = window.innerHeight / 2;
 
 const app = new PIXI.Application();
-
 await app.init({ width: window.innerWidth,preference:'webgl' ,antialias: true , height: window.innerHeight, background: 0x000000 ,resolution: window.devicePixelRatio || 2, autoDensity: true});
 document.body.appendChild(app.canvas);
 setRenderer(app.renderer);
@@ -52,15 +53,16 @@ function importfile() {
     sound.stopAll();
     globalVideo.pause();
     videoSprite.visible = false;
+    if_all = false;
     if_music = false;
     if_hitsound = false;
     if_video = false;
     fileInput.click();
 };
 window.importfile = importfile;
-window.renderalltrack = loadtrackclick;
+window.renderalltrack = await loadtrackclick;
 window.playOnClick = await playOnClick;
-window.escapeOnClick = escapeOnclick;
+window.escapeOnClick = await escapeOnclick;
 window.speedUp = speedUp;
 window.speedDown = speedDown;
 const buttonEscape = document.getElementById('ButtonEscape');
@@ -69,27 +71,32 @@ let if_imported = false;
 let isWaitingForAudio = false;
 let if_pause = false , pauseTime = undefined , pauseTotal = 0;
 
-function loadtrackclick() {
-    if_all = true;
-    if_play = false;
-    beat = -114514;
-    sound.stopAll();
-    globalVideo.pause();
-    videoSprite.visible = false;
-    if_music = false;
-    if_hitsound = false;
-    if_video = false;
-    for (let i = 0 ; i < visibleTrack.length ; i++) {
-        tracks[visibleTrack[i]].visible = false;
+async function loadtrackclick() {
+    if (if_imported) {
+        if_all = false;
+        await delay(1);
+        if_all = true;
+        if_play = false;
+        beat = -114514;
+        sound.stopAll();
+        globalVideo.pause();
+        videoSprite.visible = false;
+        if_music = false;
+        if_hitsound = false;
+        if_video = false;
+        for (let i = 0 ; i < visibleTrack.length ; i++) {
+            tracks[visibleTrack[i]].visible = false;
+        };
+        visibleTrack = [];
+        for (let i = angledata.length - 1;i>= 0 ; i--) {
+            let trackname = i;
+            visibleTrack.push(trackname);
+            tracks[trackname].visible = true;
+        };
+        Notice.innerHTML = '';
+        renderalltrack();
+        //partload(-100,10000);
     };
-    visibleTrack = [];
-    for (let i = angledata.length - 1;i>= 0 ; i--) {
-        let trackname = i;
-        visibleTrack.push(trackname);
-        tracks[trackname].visible = true;
-    };
-    document.getElementById('Notice').innerHTML = '';
-    renderalltrack();
 };
 
 fileInput.addEventListener('change', async (event) => {
@@ -100,11 +107,23 @@ fileInput.addEventListener('change', async (event) => {
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target.result;
+            if (sound.exists('bgm')) sound.remove('bgm');
             adofaifile = toLegalJson(content);
             await readadofai(adofaifile);
             isWaitingForAudio = true;
             fileInput.accept = 'audio/*';
             Notice.innerHTML = 'Please Click Import Again To Load Music File.'
+            for (let i = 0 ; i < visibleTrack.length ; i++) {
+                tracks[visibleTrack[i]].visible = false;
+            };
+            visibleTrack = [];
+            for (let i = angledata.length - 1;i>= 0 ; i--) {
+                let trackname = i;
+                visibleTrack.push(trackname);
+                tracks[trackname].visible = true;
+            };
+            if_all = true;
+            renderalltrack();
         };
         reader.onerror = () => {Notice.innerHTML = "Error Loading File.";};
         reader.readAsText(file, 'UTF-8');
@@ -120,15 +139,20 @@ fileInput.addEventListener('change', async (event) => {
                 sound.play('bgm');
                 sound.play('hitsound');
                 sound.stopAll();
-                Notice.innerHTML = 'Successful loaded Music File!'
+                Notice.innerHTML = 'Successful loaded Music File!';
+                if_all = false;
+                await delay(1);
+                if_all = true;
+                renderalltrack();
             } catch (err) {
                 URL.revokeObjectURL(url);
+                Notice.innerHTML = 'Failed to load Music File!';
                 return;
             };
         };
         isWaitingForAudio = false;
         fileInput.value = '';
-        fileInput.accept = '.adofai';
+        fileInput.accept = '.adofai, application/json, text/plain';
     };
 });
 
@@ -241,6 +265,8 @@ document.addEventListener('keydown' ,async (event) => {
     switch (event.key) {
         case '0':
             if (if_imported) {
+                if_all = false;
+                await delay(1);
                 if_all = true;
                 if_play = false;
                 beat = -114514;
@@ -264,45 +290,69 @@ document.addEventListener('keydown' ,async (event) => {
                 //partload(-100,10000);
             };
             break;
-        case 'ArrowRight':
-            CamP[0] += 10;
-            break;
-        case 'ArrowUp':
-            CamP[1] += 10;
-            break;
-        case 'ArrowLeft':
-            CamP[0] -= 10;
-            break;
-        case 'ArrowDown':
-            CamP[1] -= 10;
-            break;
         case ' ':
             if (if_imported) {
                 buttonSP.src = './images/Pause.svg';
                 buttonEscape.style.left = '75px';
                 if_play = false;
-                await delay(0);
+                await delay(1);
                 PlayInitialize();
                 GameLoop();
             };
             break;
         case 'Escape':
             if_play = false;
-            if_all = false;
             buttonSP.src = './images/Play.svg';
             buttonEscape.style.left = '-75px';
             beat = -114514;
             sound.stopAll();
+            CamR = 0;
             globalVideo.pause();
             videoSprite.visible = false;
             if_music = false;
             if_hitsound = false;
             if_video = false;
+            await delay(1);
+            for (let i = 0 ; i < visibleTrack.length ; i++) {
+                tracks[visibleTrack[i]].visible = false;
+            };
+            visibleTrack = [];
+            for (let i = angledata.length - 1;i>= 0 ; i--) {
+                const trackname = i;
+                const sro = tilesro[i] , scale = tilescale[i] , posi = tilepos[i];
+                tracks[trackname].position.set(posi[0] , -posi[1]);
+                tracks[trackname].rotation = - sro[1] * Math.PI / 180;
+                tracks[trackname].alpha = sro[2] / 100;
+                tracks[trackname].scale.set(sro[0] * scale[0] / 10000 , sro[0] * scale[1] / 10000 );
+                trackColor.push([undefined,undefined,true]);
+                tracks[trackname].visible = true;
+                visibleTrack.push(trackname);
+            };
+            updateSelectionColor(visibleTrack , ['debb7b','a58750','Standard']);
+            if_all = true;
+            beat = -114514;  
+            balls[1].visible = false;
+            balls[10].visible = false;
+            balls[2].visible = false;
+            balls[20].visible = false;          
+            renderalltrack();
             break;
-        //case '1':
-            //globalVideo.playbackRate = 1.0;
-            //globalVideo.currentTime = 0;
-            //globalVideo.play();
+        case 'ArrowLeft':
+            updateSelectionColor(selectRegion , ['debb7b','a58750','Standard']);
+            if (selectTrack != undefined && selectTrack > 0) {
+                selectRegion = [selectTrack - 1];
+                selectTrack--;
+            };
+            break;
+        case 'ArrowRight':
+            updateSelectionColor(selectRegion , ['debb7b','a58750','Standard']);
+            if (selectTrack != undefined && selectTrack < tilepos.length - 2) {
+                selectRegion = [selectTrack + 1];
+                selectTrack++;
+            };
+            break;
+        case '1':
+            console.log("DeBug Mode.");
     };
 });
 
@@ -311,6 +361,7 @@ let traord = 0 , waitingTra = [] , traDetail = [];
 let record = 0;
 let trackColor = new Array ;
 let tracklen = angledata.length;
+let selectOffset = 0;
 
 function PlayInitialize() {
     sound.stopAll();
@@ -319,6 +370,7 @@ function PlayInitialize() {
     if_pause = false;
     pauseTotal = 0;
     pauseTime = undefined;
+    selectOffset = selectRegion.length == 1 ? time[selectRegion[0]] : 0;
 
     if_all = false;
     if_music = false;
@@ -330,12 +382,14 @@ function PlayInitialize() {
     ballTile[1] = [[0,0]];
     ballTile[2] = [[0,0]];
     beat = -1 * countdownTicks;
-    startTime = performance.now() / 1000 + countdownTicks * 60 / Sbpm;
+    startTime = selectOffset == 0 ? (performance.now() / 1000 + countdownTicks * 60 / Sbpm) : (performance.now() / 1000 - (selectOffset + offset / 1000)/(pitch*speed/10000));
     findTick = -1 * countdownTicks;
 
     rectime = performance.now();
     balls[1].visible = true;
     balls[2].visible = true;
+    balls[10].visible = true;
+    balls[20].visible = true;
     Notice.innerHTML = '';
 
     waitingCam = [];
@@ -373,6 +427,19 @@ function PlayInitialize() {
         tracks[trackname].visible = false;
     };
     trackColorInfluencing = savingColorInfluencing.slice();
+    if(selectOffset != 0) {
+        let i = 0;
+        while (selectOffset > actMovTime[i][0]) i++;
+        camord = i;
+        CamP = ballpos[selectRegion[0]].slice();
+        CamR = 0;
+        CamRel = 'Player';
+        i = 0;
+        while (selectOffset > actTraTime[i][1]) i++;
+        traord = i;
+    };
+    
+    selectRegion = [];
 
     if_play = true;
 };
@@ -383,7 +450,10 @@ function pointer(x,y) {
     myGraphic.position.set(x,y);
 };
 //pointer(CX,CY);
-
+let clickTile = false , clickOnTile = false;
+let selectRegion = [];
+const selectColor = new ShiftType('Glow','8FBF60','ffffff','None',0,0,0,2,'Standard');
+let lastSelectTrack = undefined , selectTrack = undefined;
 let Container = {};
 let tracks = new Object , balls = new Object , trackGraphics = new Object;
 async function loadalltrack() {
@@ -412,6 +482,27 @@ async function loadalltrack() {
         };
         Container[InContainerNum].addChild(tracks[trackname]);
         tracks[trackname].visible = false;
+        tracks[trackname].interactive = true;
+        tracks[trackname].number = trackname;
+        trackGraphics[trackname].updateColors('debb7b','a58750',true);
+        tracks[trackname].on('pointerup', async (event) => {
+            selectTrack = event.currentTarget.number;
+            await delay(1);
+            if (!clickTile) return;
+            clickOnTile = true;
+            updateSelectionColor(selectRegion , ['debb7b','a58750','Standard']);
+            selectRegion = [];
+            if (event.shiftKey && lastSelectTrack != undefined && selectTrack != lastSelectTrack) {
+                if (selectTrack > lastSelectTrack) {
+                    for (let i = lastSelectTrack; i <= selectTrack; i++) selectRegion.push(i);
+                } else {
+                    for (let i = selectTrack; i <= lastSelectTrack; i++) selectRegion.push(i);
+                };
+            } else {
+                selectRegion = [selectTrack];
+                lastSelectTrack = selectTrack;
+            };
+        });
     };
 };
 
@@ -499,8 +590,23 @@ let if_all = false , if_play = false;
 let animationId = null;
 function renderalltrack() {
     if (!if_all) return;
-    refreshState();
+    fpstime = performance.now();
+    if (fpstime - fpscaltime > 1000) {
+        fpscaltime = performance.now();
+        TFPS.innerHTML = String(truefps) + ' | TFPS';
+        truefps = 0;
+    } else truefps++;
+    refreshState([0,visibleTrack.length - 1]);
+    const SelCol = selectColor.doCalculateColor(performance.now() / 1000 , 0);
+    updateSelectionColor(selectRegion , SelCol);
     animationId = requestAnimationFrame(renderalltrack); 
+};
+
+function updateSelectionColor(region,color) {
+    if (region.length <= 0) return;
+    for(let i = 0 ; i < region.length ; i++) {
+        trackGraphics[region[i]].updateColors(...color);
+    };
 };
 
 let visibleTrack = [];
@@ -592,8 +698,6 @@ let fpstime = performance.now();
 const BEAT = document.getElementById('Beat');
 const TFPS = document.getElementById('TFPS');
 let fpscaltime = performance.now() , truefps;
-let WaitMusicTime = -114514;
-let WaitVideoTime = -114514;
 let gametime = new Number;
 let cambeat = new Number;
 let ibeat;
@@ -607,31 +711,26 @@ function GameLoop() {
     } else truefps++;
     BEAT.innerHTML = String(beat.toFixed(3)) + ' | Beat';
     gametime = timeCaculate();
-    if (!if_music && gametime > -1 * offset / 1000) {
-        if (WaitMusicTime == -114514) WaitMusicTime = fpstime / 1000;
-        if ((fpstime / 1000 - WaitMusicTime) * pitch * speed / 10000 > 60 / Sbpm) { 
-            if (sound.exists('bgm')) {
-                music = sound.play('bgm');
-                music.volume = setting['volume'] / 100;
-                music.speed = pitch * speed / 10000;
-            };
-            if_music = true;
-            WaitMusicTime = -114514;
+    if (!if_music && gametime > -1 * offset / 1000 + (60 / Sbpm) * pitch * speed / 10000) {
+        if (sound.exists('bgm')) {
+            music = sound.play('bgm' , {start: selectOffset == 0? 0 : selectOffset + offset / 1000 - (60 / Sbpm)});
+            music.volume = setting['volume'] / 100;
+            music.speed = pitch * speed / 10000;
         };
+        if_music = true;
     };
     if (!if_video && gametime > - vidOffset / 1000) {
         if (videoSprite && globalVideo.currentTime) {
             globalVideo.playbackRate = pitch * speed / 10000;
-            globalVideo.currentTime = 0;
+            globalVideo.currentTime = selectOffset == 0?0 : selectOffset + vidOffset / 1000;
             globalVideo.play();
             videoSprite.visible = true;
         };
         if_video = true;
-        WaitVideoTime = -114514;
     };
     if (!if_hitsound && gametime > -1 * countdownTicks * 60 / Sbpm) {
             if (sound.exists('hitsound')) {
-                hitsoundmusic = sound.play('hitsound');
+                hitsoundmusic = sound.play('hitsound' ,{start: selectOffset == 0?0 : selectOffset + countdownTicks * 60 / Sbpm});
                 hitsoundmusic.speed = pitch * speed / 10000;
             };
             if_hitsound = true;
@@ -653,7 +752,7 @@ function GameLoop() {
 };
 
 function timeCaculate() {
-    if (if_pause) {return pauseTime } else {
+    if (if_pause) {return pauseTime} else {
     return (performance.now() / 1000 - startTime) * pitch * speed / 10000 - offset / 1000 - pauseTotal};
 };
 
@@ -1035,31 +1134,51 @@ function trackAction() {
 let dragging = false;
 let startPos = { x: 0, y: 0 };
 let currentPos = { x: 0, y: 0 };
-let startCam;
+let startCam, pointerDownTime = 0;
+let deltaX,deltaY;
 
 function onPointerDown(event) {
+    pointerDownTime = performance.now();
     dragging = true;
     startPos = { x: event.clientX, y: event.clientY };
     currentPos = { ...startPos };
     startCam = CamP.slice();
+    deltaX = 0;
+    deltaY = 0;
 };
 function onPointerMove(event) {
     if (!dragging || !if_all) return;
     currentPos = { x: event.clientX, y: event.clientY };
     
-    const deltaX = currentPos.x - startPos.x;
-    const deltaY = currentPos.y - startPos.y;
+    deltaX = currentPos.x - startPos.x;
+    deltaY = currentPos.y - startPos.y;
     const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
     
-    CamP[0] = startCam[0] - deltaX * 200 / CamZ;
-    CamP[1] = startCam[1] + deltaY * 200 / CamZ;
+    CamP[0] = startCam[0] - deltaX / 200 * CamZ;
+    CamP[1] = startCam[1] + deltaY / 200 * CamZ;
 };
-function onPointerUp() {
+async function onPointerUp() {
+    if (performance.now() - pointerDownTime < 150 && Math.sqrt(deltaX*deltaX + deltaY*deltaY) < 20) {
+        clickOnTile = false;
+        clickTile = true;
+        await delay(2);
+        if (!clickOnTile) {
+            updateSelectionColor(selectRegion , ['debb7b','a58750','Standard']);
+            selectRegion = [];
+            lastSelectTrack = undefined;
+            selectTrack = undefined;
+        };
+    } else clickTile = false;
     dragging = false;
 };
 document.addEventListener('mousedown', onPointerDown);
 document.addEventListener('mousemove', onPointerMove);
-document.addEventListener('mouseup', onPointerUp);
+document.addEventListener('mouseup', await onPointerUp);
+document.addEventListener('wheel', (event) => {
+    if (!if_all) return;
+    const deltaY = event.deltaY;
+    if (CamZ > 10 && CamZ < 10000) CamZ += deltaY / 10;
+});
 
 function UpdateRenderTrackColor(s,e) {
     for (let i = s; i <= e; i++){
@@ -1110,7 +1229,7 @@ async function playOnClick() {
             buttonSP.src = './images/Pause.svg';
             buttonEscape.style.left = '75px';
             if_play = false;
-            await delay(0);
+            await delay(1);
             PlayInitialize();
             GameLoop();
         };
@@ -1124,7 +1243,7 @@ async function playOnClick() {
     };  
 };
 
-function escapeOnclick() {
+async function escapeOnclick() {
     buttonEscape.style.left = '-75px';
     buttonSP.src = './images/Play.svg';
     if_play = false;
@@ -1136,15 +1255,42 @@ function escapeOnclick() {
     if_music = false;
     if_hitsound = false;
     if_video = false;
+    CamR = 0;
+    await delay(1);
+    trackColorInfluencing = savingColorInfluencing.slice();
+    UpdateRenderTrackColor(0 , tilepos.length - 1);
+    for (let i = 0 ; i < visibleTrack.length ; i++) {
+        tracks[visibleTrack[i]].visible = false;
+    };
+    visibleTrack = [];
+    for (let i = angledata.length - 1;i>= 0 ; i--) {
+        const trackname = i;
+        const sro = tilesro[i] , scale = tilescale[i] , posi = tilepos[i];
+        tracks[trackname].position.set(posi[0] , -posi[1]);
+        tracks[trackname].rotation = - sro[1] * Math.PI / 180;
+        tracks[trackname].alpha = sro[2] / 100;
+        tracks[trackname].scale.set(sro[0] * scale[0] / 10000 , sro[0] * scale[1] / 10000 );
+        trackColor.push([undefined,undefined,true]);
+        tracks[trackname].visible = true;
+        visibleTrack.push(trackname);
+    };
+    updateSelectionColor(visibleTrack , ['debb7b','a58750','Standard']);
+    if_all = true;
+    beat = -114514;  
+    balls[1].visible = false;
+    balls[10].visible = false;
+    balls[2].visible = false;
+    balls[20].visible = false;          
+    renderalltrack();
 };
 
 function speedUp () {
-    speed++;
+    if (!if_play) speed++;
     speedP.innerHTML = speed.toString() + '%';
 };
 
 function speedDown () {
-    speed--;
+    if (!if_play) speed--;
     speedP.innerHTML = speed.toString() + '%';
 };
 
@@ -1210,3 +1356,28 @@ videoInput.addEventListener('change', async (event) => {
     videoSprite.visible = false;
     Notice.innerHTML = 'Successful Loaded Video!';
 });
+
+adofaifile = toLegalJson(defaultLevel);
+await readadofai(adofaifile);
+try {
+    sound.add('bgm' , defaultLevelOgg);
+    sound.play('bgm');
+    sound.play('hitsound');
+    sound.stopAll();
+    Notice.innerHTML = 'Successful loaded Music File!'
+} catch (err) {
+    URL.revokeObjectURL(defaultLevelOgg);
+};
+if_all = true;
+for (let i = 0 ; i < visibleTrack.length ; i++) {
+    tracks[visibleTrack[i]].visible = false;
+};
+visibleTrack = [];
+for (let i = angledata.length - 1;i>= 0 ; i--) {
+    let trackname = i;
+    visibleTrack.push(trackname);
+    tracks[trackname].visible = true;
+};
+Notice.innerHTML = '';
+beat = -114514;
+renderalltrack();
