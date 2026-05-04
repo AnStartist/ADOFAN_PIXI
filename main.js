@@ -53,7 +53,6 @@ function importfile() {
     sound.stopAll();
     globalVideo.pause();
     videoSprite.visible = false;
-    if_all = false;
     if_music = false;
     if_hitsound = false;
     if_video = false;
@@ -106,6 +105,7 @@ fileInput.addEventListener('change', async (event) => {
     if (!isWaitingForAudio) {
         const reader = new FileReader();
         reader.onload = async (e) => {
+            if_all = false;
             const content = e.target.result;
             if (sound.exists('bgm')) sound.remove('bgm');
             adofaifile = toLegalJson(content);
@@ -429,14 +429,28 @@ function PlayInitialize() {
     trackColorInfluencing = savingColorInfluencing.slice();
     if(selectOffset != 0) {
         let i = 0;
-        while (selectOffset > actMovTime[i][0]) i++;
+        if (actMovTime.length > 0) while (selectOffset > actMovTime[i][0]) i++;
         camord = i;
         CamP = ballpos[selectRegion[0]].slice();
         CamR = 0;
         CamRel = 'Player';
         i = 0;
-        while (selectOffset > actTraTime[i][1]) i++;
+        if (actTraTime.length > 0) while (selectOffset > actTraTime[i][1]) i++;
         traord = i;
+        let halfwayTrackState;
+        if (actTraTime.length > 1 && traord >= 1) halfwayTrackState = actTraTime[i - 1][0][2];
+        if (actTraTime.length > 1 && traord >= 1) {
+            for(let j = 0; j < tilepos.length; j++) {
+                if (tracks[j]) {
+                    const halfwayThisState = halfwayTrackState[j];
+                    tracks[j].position.set(halfwayThisState[0][0] , -halfwayThisState[0][1]);
+                    tracks[j].scale.set(tilesro[j][0] * halfwayThisState[1][0][0] / 10000, tilesro[j][0] * halfwayThisState[1][0][1] / 10000);
+                    tracks[j].rotation = - halfwayThisState[1][1] * Math.PI / 180;
+                    tracks[j].alpha = halfwayThisState[1][2] / 100;
+                    if (j > 0) ballpos[j - 1] = halfwayThisState[2].slice();
+                };
+            };
+        };
     };
     
     selectRegion = [];
