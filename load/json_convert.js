@@ -1,6 +1,13 @@
+import {
+	Parsers
+} from 'adofai'
+
+const {StringParser} = Parsers;
+const strParser = new StringParser();
+
 export function toLegalJson(oldjson) {
     let json = oldjson;
-
+	/*
     // 原有结构修复
     json = json
         .replace(/,(\s*[}\]])/g, "$1")   // 去尾逗号
@@ -24,10 +31,11 @@ export function toLegalJson(oldjson) {
             return '\\u' + code.toString(16).padStart(4, '0');
         });
     });
-
+	*/
     let jsonobject;
     try {
-        jsonobject = JSON.parse(json);
+        /*jsonobject = JSON.parse(json);*/
+        jsonobject = strParser.parse(json);
     } catch (e) {
         document.getElementById('Notice').innerHTML = "Fail Reading JSON File!";
         console.log(json);

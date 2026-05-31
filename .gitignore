@@ -1,0 +1,3 @@
+# ignore list
+dist
+node_modules
