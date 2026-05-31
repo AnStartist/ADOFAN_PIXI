@@ -183,6 +183,7 @@ export class loadlevel extends processing{
             this.trackscale.push([100,100]);
             this.trackcolor.push('#ffffff');
         };
+        this.trackpos.splice(this.trackpos.length - 1,1);
     };
     loadhitsound() {
         let hitsound = this.settings['hitsound'] , hitsoundvolume = this.settings['hitsoundVolume'];
@@ -261,7 +262,7 @@ export class loadlevel extends processing{
             if (thistile == 1) {
                 ct.push(floor);
             } else {
-                while (floor <= this.anglelist.length) {
+                while (floor < this.anglelist.length) {
                     ct.push(floor);
                     floor++;
                 };
@@ -339,6 +340,8 @@ export class loadlevel extends processing{
     moveTrackTime = [];
     savingtrack = [];
     loadmovetrack () {
+        const loadTimeList = new Object;
+        loadTimeList.savingtime = performance.now();
         for (let i = 0 ; i < this.trackpos.length ; i++) {
             this.savingtrack.push([]);
             this.savingtrack[i].push(this.trackpos[i].slice());
@@ -346,13 +349,14 @@ export class loadlevel extends processing{
             if (i > 0) this.savingtrack[i].push(this.ballpos[i - 1].slice());
         };
         //savingtrack [[x,y],[[sx,sy],r,o]]
+        loadTimeList.step1 = performance.now() - loadTimeList.savingtime;
+        loadTimeList.savingtime = performance.now();
         for (let i = 0 ; i < this.actionMoveTrack.length ; i++) {
             const event = this.actionMoveTrack[i];
             const floor = event['floor'];
             const T = this.time[floor] + (event['angleOffset'] / 180) * (60 / this.tbpm[floor]);
-            const moveEvent = this.trackCaculate(event , T);
             if (this.moveTrackTime.length == 0) {
-                this.moveTrackTime.push([moveEvent , T]);
+                this.moveTrackTime.push([i , T]);
             } else {
                 let j = 0;
                 while (this.moveTrackTime[j][1] <= T) {
@@ -362,10 +366,21 @@ export class loadlevel extends processing{
                         break;
                     };
                 };
-                if (j == -1) this.moveTrackTime.push([moveEvent , T]); 
-                else this.moveTrackTime.splice(j , 0 , [moveEvent ,T]);
+                if (j == -1) this.moveTrackTime.push([i , T]); 
+                else this.moveTrackTime.splice(j , 0 , [i ,T]);
             };
         };
+        loadTimeList.step2 = performance.now() - loadTimeList.savingtime;
+        loadTimeList.savingtime = performance.now();
+        for (let i = 0; i < this.moveTrackTime.length; i++) {
+            const event = this.actionMoveTrack[this.moveTrackTime[i][0]];
+            const T = this.moveTrackTime[i][1];
+            const moveEvent = this.trackCaculate(event , T);
+            this.moveTrackTime[i][0] = moveEvent.slice();
+        };
+        loadTimeList.step3 = performance.now() - loadTimeList.savingtime;
+        loadTimeList.savingtime = performance.now();
+        //console.log(loadTimeList);
     };
 
     trackCaculate (event , startTime) {
@@ -479,7 +494,7 @@ export class loadlevel extends processing{
             };
             moved.push([0,0,0,0,0,0]);
         };
-        return[[change , tiles , dura , ease , startTime , 0 , event] , moved , structuredClone(this.savingtrack)];
+        return[[change , tiles , dura , ease , startTime , 0 , event] , moved];
     };
 
 
@@ -578,4 +593,24 @@ export class loadlevel extends processing{
     get g_tracol() {return this.trackColorEvent};
     get g_tracolInfluence() {return this.trackColorInfluencing};
     get g_record() {return this.RecolorTime};
+};
+
+function cloneSavingTrack(arr) {
+    const len = arr.length;
+    const result = new Array(len);
+    for (let i = 0; i < len; i++) {
+        const t = arr[i];
+        result[i] = [
+            [t[0][0], t[0][1]],
+            [
+                [t[1][0][0], t[1][0][1]],
+                t[1][1],
+                t[1][2]
+            ],
+            t[2]
+                ? [t[2][0], t[2][1]]
+                : undefined
+        ];
+    }
+    return result;
 };
