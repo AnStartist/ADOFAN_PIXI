@@ -181,6 +181,8 @@ let savingballpos = new Array;
 let actTrackColorEvent = new Object , trackColorInfluencing = new Array;
 let actRecolorTime = new Array , savingColorInfluencing = new Array;
 let vidOffset = 0;
+let startLoadTime = performance.now();
+const loadTimeList = new Object;
 
 async function readadofai(adofai) {
     if ("pathData" in adofai) {
@@ -197,21 +199,32 @@ async function readadofai(adofai) {
     setting = adofai["settings"];
     actions = adofai["actions"];
     let level = new loadlevel(actions , angledata , setting);
+    startLoadTime = performance.now();
     level.scanactions();
+    recordLoadTime('step1');
     let twirl = level.loadtwirl();
     movingball = twirl['movingball'];
     rotatedir = twirl['rotatedir'];
+    recordLoadTime('step2');
     anglelist = level.loadangle();
     tbpm = level.loadspeed();
+    recordLoadTime('step3');
     trackrad = level.loadradius();
     level.loadtilepos();
+    recordLoadTime('step4');
     level.loadpause();
     time = level.loadtime();
+    recordLoadTime('step5');
     level.loadpositiontrack();
+    recordLoadTime('step6');
     level.loadhitsound();
+    recordLoadTime('step7');
     level.loadcamera();
+    recordLoadTime('step8');
     level.loadmovetrack();
+    recordLoadTime('step9');
     level.loadtilecolor();
+    recordLoadTime('step10');
     tilepos = level.g_tpos;
     tilesro = level.g_tsro;
     tilescale = level.g_tsca;
@@ -234,15 +247,24 @@ async function readadofai(adofai) {
     CamRel = setting['relativeTo'];
     pitch = setting['pitch'];
     vidOffset = setting['vidOffset'];
+    recordLoadTime('step11');
     await loadalltrack();
     await loadball();
+    recordLoadTime('step12');
     offset = setting['offset'];
     Sbpm = setting['bpm'];
     countdownTicks = setting['countdownTicks']? setting['countdownTicks'] : 4;
     Notice.innerHTML = 'Loading Hitsound!';
     await soundcaculate();
+    recordLoadTime('step13');
     Notice.innerHTML = 'Successful Loaded Level!';
+    //console.log(loadTimeList);
     if_imported = true;
+};
+
+function recordLoadTime(action) {
+    loadTimeList[action] = performance.now() - startLoadTime;
+    startLoadTime = performance.now();
 };
 
 function readPathData(pathData) {
@@ -437,20 +459,9 @@ function PlayInitialize() {
         i = 0;
         if (actTraTime.length > 0) while (selectOffset > actTraTime[i][1]) i++;
         traord = i;
-        let halfwayTrackState;
-        if (actTraTime.length > 1 && traord >= 1) halfwayTrackState = actTraTime[i - 1][0][2];
-        if (actTraTime.length > 1 && traord >= 1) {
-            for(let j = 0; j < tilepos.length; j++) {
-                if (tracks[j]) {
-                    const halfwayThisState = halfwayTrackState[j];
-                    tracks[j].position.set(halfwayThisState[0][0] , -halfwayThisState[0][1]);
-                    tracks[j].scale.set(tilesro[j][0] * halfwayThisState[1][0][0] / 10000, tilesro[j][0] * halfwayThisState[1][0][1] / 10000);
-                    tracks[j].rotation = - halfwayThisState[1][1] * Math.PI / 180;
-                    tracks[j].alpha = halfwayThisState[1][2] / 100;
-                    if (j > 0) ballpos[j - 1] = halfwayThisState[2].slice();
-                };
-            };
-        };
+        i = 0; 
+        if (actRecolorTime.length > 0) while (selectOffset > actRecolorTime[i][1]) i++;
+        record = i;
     };
     
     selectRegion = [];
